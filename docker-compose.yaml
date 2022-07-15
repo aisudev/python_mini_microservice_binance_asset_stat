@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  # rabbitmq service
+  rabbitmq-service:
+    image: rabbitmq:3.10-management
+    container_name: 'rabbitmq-service'
+    ports:
+        - "5672:5672"
+        - "15672:15672"
+    networks:
+      - default
+
+  # binance service
+  binance-service:
+    build:
+      context: ./binance/
+      dockerfile: Dockerfile
+    container_name: 'binance-service'
+    restart: always
+    depends_on:
+      - rabbitmq-service
+    networks:
+      - default
+    environment:
+      RABBITMQ_URI: amqp://guest:guest@rabbitmq-service:5672
+
+  # server service
+  server-service:
+    build:
+      context: ./server/
+      dockerfile: Dockerfile
+    container_name: 'server-service'
+    ports:
+      - "3333:80"
+    restart: always
+    depends_on:
+      - rabbitmq-service
+    networks:
+      - default
+    environment:
+      RABBITMQ_URI: amqp://guest:guest@rabbitmq-service:5672
+
+networks:
+  default:
+    driver: bridge
